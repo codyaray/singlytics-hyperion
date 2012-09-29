@@ -39,9 +39,11 @@ def hyperion_profile_update(application, account):
       try:
         pipe.watch('al:%s' % application)
         hyperion_id = pipe.hget('al:%s' % application, account)
-        while hyperion_id is None:
-          for service in (request.json or {}).iteritems():
+        if hyperion_id is None:
+          for service in (request.json or {}).iterkeys():
             hyperion_id = pipe.hget('sl:%s' % service, uid)
+            if hyperion_id is not None:
+              break
         pipe.multi()
         if hyperion_id is None:
           hyperion_id = uuid4()
