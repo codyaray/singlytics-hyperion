@@ -1,1 +1,1 @@
-web: python hyperion/hyperion.py
+web: python hyperion.py
