@@ -24,6 +24,13 @@ To update profile:
 	Content-Type: text/html; charset=utf-8
 	Content-Length: 0
 
+To update event:
+
+	$ curl -si -XPUT 'http://localhost:5000/hyperion/abc/123/myevent/?context=foobar'
+	HTTP/1.0 200 OK
+	Content-Type: text/html; charset=utf-8
+	Content-Length: 0
+
 For analytics:
 
 	$ curl -si 'http://localhost:5000/hyperion/abc/'

@@ -51,6 +51,10 @@ def hyperion_profile_update(application, account):
         pass
   return Response(status=200)
 
+@app.route('/hyperion/<application>/<account>/<event>/', methods=['POST', 'PUT'])
+def hyperion_event(application, account, event):
+  return Response(status=200)
+
 @app.route('/hyperion/<application>/<account>/', methods=['GET'])
 def hyperion_profile_retrieval(application, account):
   hyperion_id = db.hget('al:%s' % application, account)
