@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from flask import Flask, jsonify, request, Response
+from logging import getLogger
 from redis import from_url as Redis, WatchError
 from time import time
 from uuid import uuid4
@@ -20,6 +21,7 @@ REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost:6379')
 
 app = Flask(__name__)
 db = Redis(REDIS_URL, db=1)
+log = getLogger(__name__)
 
 @app.route('/analytics/<application>/', methods=['GET'])
 def hyperion_analytics(application):
@@ -36,9 +38,12 @@ def hyperion_analytics(application):
 def hyperion_profile_update(application, account):
   hyperion_id = db.hget('al:%s' % application, account)
   if hyperion_id is None:
+    log.debug('Starting reverse lookup for (%s,%s)', application, account)
     for service, meta in (request.json or {}).iteritems():
-      hyperion_id = db.hget('sl:%s' % service, meta.get('id'))
+      uid = meta.get('id')
+      hyperion_id = db.hget('sl:%s' % service, uid)
       if hyperion_id is not None:
+        log.debug('Found match of (%s,%s) to %s', service, uid, hyperion_id)
         break
   if hyperion_id is None:
     hyperion_id = uuid4()
@@ -71,8 +76,17 @@ def hyperion_profile_retrieval(application, account):
         result.update(demographics)
         demographics = result
     return jsonify(demographics=demographics)
-  return Response(status=400)
+  return Response(status=404)
 
 if __name__ == '__main__':
+  debug = False
+  if os.environ.get('DEBUG', 'false').lower() == 'true':
+    from logging import basicConfig, DEBUG
+    basicConfig(
+      level=DEBUG,
+      format='%(asctime)s %(levelname)-8s %(name)s (%(funcName)s:%(lineno)d) %(message)s',
+      datefmt='%Y.%m.%d-%H:%M:%S'
+    )
+    debug = True
   port = int(os.environ.get('PORT', 5000))
-  app.run(host='0.0.0.0', port=port, debug=True)
+  app.run(host='0.0.0.0', port=port, debug=debug)
