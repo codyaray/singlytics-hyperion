@@ -1,0 +1,26 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <!--<TextView-->
+        <!--android:id="@+id/tv_profiles"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentTop="true"-->
+        <!--android:layout_marginLeft="26dp"-->
+        <!--android:layout_marginTop="19dp"-->
+        <!--android:padding="@dimen/padding_medium"-->
+        <!--android:text="@string/profiles"-->
+        <!--tools:context=".ProfilesActivity" />-->
+
+    <WebView android:id="@+id/wv_profiles"
+             android:layout_width="fill_parent"
+             android:layout_height="fill_parent"
+             android:layout_alignParentLeft="true"
+             android:layout_alignParentTop="true"
+             android:layout_margin="8dp"
+             android:padding="@dimen/padding_medium"
+             android:scrollbarStyle="outsideOverlay" />
+</RelativeLayout>

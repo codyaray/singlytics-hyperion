@@ -2,9 +2,13 @@
 
 from collections import defaultdict
 from flask import Flask, jsonify, request, Response
-from redis import Redis, WatchError
+from redis import from_url as Redis, WatchError
 from time import time
 from uuid import uuid4
+
+import os
+
+REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost')
 
 # Legend for Redis
 # "hm:${hyperion}" => {application => account}
@@ -15,7 +19,7 @@ from uuid import uuid4
 # "td:${application}:${account}" => SortedSet(timestamp as score, string value)
 
 app = Flask(__name__)
-db = Redis(db=1)
+db = Redis(REDIS_URL, db=1)
 
 @app.route('/hyperion/<application>/', methods=['GET'])
 def hyperion_analytics(application):
@@ -51,6 +55,10 @@ def hyperion_profile_update(application, account):
         pass
   return Response(status=200)
 
+@app.route('/hyperion/<application>/<account>/<event>/', methods=['POST', 'PUT'])
+def hyperion_event(application, account, event):
+  return Response(status=200)
+
 @app.route('/hyperion/<application>/<account>/', methods=['GET'])
 def hyperion_profile_retrieval(application, account):
   hyperion_id = db.hget('al:%s' % application, account)
@@ -70,4 +78,5 @@ def hyperion_profile_retrieval(application, account):
   return Response(status=400)
 
 if __name__ == '__main__':
-  app.run(host='0.0.0.0', debug=True)
+  port = int(os.environ.get('PORT', 5000))
+  app.run(host='0.0.0.0', port=port)
