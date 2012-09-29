@@ -2,14 +2,18 @@
 
 from collections import defaultdict
 from flask import Flask, jsonify, request, Response
+from itertools import imap
 from logging import getLogger
 from redis import from_url as Redis
-from services import ServiceRegistry
+from services import Aggregator, ServiceRegistry
 from time import time
 from uuid import uuid4
 
 import os
 
+MILLISECONDS_PER_MINUTE = 60 * 1000
+MILLISECONDS_PER_5_MINUTE = 5 * MILLISECONDS_PER_MINUTE
+MILLISECONDS_PER_DAY = 24 * 60 * MILLISECONDS_PER_MINUTE
 REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost:6379')
 
 # Legend for Redis
@@ -18,7 +22,9 @@ REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost:6379')
 # "al:${application}" => {account => hyperion}
 # "sl:${service}" => {uid => hyperion}
 # "dd:${application}:${account}" => {demographic data}
-# "td:${application}:${account}" => SortedSet(timestamp as score, string value)
+# "kw:${application}:${account}" => Set(keywords)
+# "ae:${application}" => Set(event name)
+# "ed:${application}:${account}:${event}" => SortedSet(timestamp)
 
 app = Flask(__name__)
 db = Redis(REDIS_URL, db=1)
@@ -36,8 +42,30 @@ def hyperion_analytics(application):
         demographics[key][value] += 1
   for key, values in demographics.iteritems():
     demographics[key]['unknown'] = number_of_accounts - sum(values.values())
-  events = []
+  events = list(db.smembers('ae:%s' % application))
   return jsonify(accounts=number_of_accounts, demographics=demographics, events=events)
+
+@app.route('/event/<application>/<account>/<event>/', methods=['POST', 'PUT'])
+def hyperion_event_update(application, account, event):
+  db.sadd('ae:%s' % application, event)
+  now = int(time() * 1000)
+  db.zadd('ed:%s:%s:%s' % (application,account,event), now, now)
+  return Response(status=200)
+
+@app.route('/event/<application>/<account>/<event>/', methods=['GET'])
+def hyperion_event_retrieval(application, account, event):
+  now = int(time()) * 1000
+  events = db.zrangebyscore('ed:%s:%s:%s' % (application,account,event), now - MILLISECONDS_PER_DAY, now)
+  return jsonify(datapoints=Aggregator.rollup(now, imap(int, events)))
+
+@app.route('/event/<application>/<event>/', methods=['GET'])
+def hyperion_event_aggregate_retrieval(application, event):
+  now = int(time()) * 1000
+  events = []
+  accounts = db.hkeys('al:%s' % application)
+  for account in accounts:
+    events.extend(db.zrangebyscore('ed:%s:%s:%s' % (application,account,event), now - MILLISECONDS_PER_DAY, now))
+  return jsonify(datapoints=Aggregator.rollup(now, sorted(imap(int, events))))
 
 @app.route('/profile/<application>/<account>/', methods=['POST', 'PUT'])
 def hyperion_profile_update(application, account):
@@ -61,10 +89,6 @@ def hyperion_profile_update(application, account):
     db.hset('sl:%s' % service, uid, hyperion_id)
     demographics.update(ServiceRegistry.get(service, 'noop').normalize(meta))
   db.hmset('dd:%s:%s' % (application,account), demographics)
-  return Response(status=200)
-
-@app.route('/event/<application>/<account>/<event>/', methods=['POST', 'PUT'])
-def hyperion_event(application, account, event):
   return Response(status=200)
 
 @app.route('/profile/<application>/<account>/', methods=['GET'])
