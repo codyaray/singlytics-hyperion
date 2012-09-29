@@ -20,3 +20,7 @@ local.properties
 .idea/
 out/
 
+ant.properties
+build.xml
+proguard-project.txt
+project.properties
