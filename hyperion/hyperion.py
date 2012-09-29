@@ -2,9 +2,13 @@
 
 from collections import defaultdict
 from flask import Flask, jsonify, request, Response
-from redis import Redis, WatchError
+from redis import from_url as Redis, WatchError
 from time import time
 from uuid import uuid4
+
+import os
+
+REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost')
 
 # Legend for Redis
 # "hm:${hyperion}" => {application => account}
@@ -15,7 +19,7 @@ from uuid import uuid4
 # "td:${application}:${account}" => SortedSet(timestamp as score, string value)
 
 app = Flask(__name__)
-db = Redis(db=1)
+db = Redis(REDIS_URL, db=1)
 
 @app.route('/hyperion/<application>/', methods=['GET'])
 def hyperion_analytics(application):
