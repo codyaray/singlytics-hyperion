@@ -28,12 +28,16 @@ log = getLogger(__name__)
 def hyperion_analytics(application):
   demographics = defaultdict(lambda: defaultdict(int))
   accounts = db.hkeys('al:%s' % application)
+  number_of_accounts = len(accounts)
   for account in accounts:
     result = db.hgetall('dd:%s:%s' % (application,account))
     for key, value in result.iteritems():
       if key != 'timestamp':
         demographics[key][value] += 1
-  return jsonify(demographics=demographics)
+  for key, values in demographics.iteritems():
+    demographics[key]['unknown'] = number_of_accounts - sum(values.values())
+  events = []
+  return jsonify(accounts=number_of_accounts, demographics=demographics, events=events)
 
 @app.route('/profile/<application>/<account>/', methods=['POST', 'PUT'])
 def hyperion_profile_update(application, account):

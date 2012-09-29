@@ -3,46 +3,56 @@ from json import loads as json_decode
 ServiceRegistry = {}
 
 class NoopService(object):
-
   @classmethod
   def normalize(cls, data):
     return {}
-
 ServiceRegistry['noop'] = NoopService
 
-class FacebookService(object):
+class BaseService(object):
+  MAPPINGS = {}
   @classmethod
   def normalize(cls, data):
-    return {
-      'gender' : data['gender'],
-      'language' : '|'.join(x['name'] for x in json_decode(data['languages'])),
-      'locale' : data['locale'],
-      'location' : json_decode(data['location'])['name'],
-      'timezone' : '%s:00' % data['timezone']
-    }
+    result = {}
+    for name, function in cls.MAPPINGS.iteritems():
+      value = safe_expr(function, data)
+      if value is not None:
+        result[name] = value
+    return result
+
+class FacebookService(BaseService):
+  MAPPINGS = {
+    'age'      : lambda data : (datetime.now() - datetime.strptime(data['birthday'], '%m/%d/%Y')).days / 365,
+    'gender'   : lambda data : data['gender'],
+    'language' : lambda data : '|'.join(x['name'] for x in json_decode(data['languages'])),
+    'locale'   : lambda data : data['locale'],
+    'location' : lambda data : json_decode(data['location'])['name'],
+    'timezone' : lambda data : '%s:00' % data['timezone']
+  }
 ServiceRegistry['facebook'] = FacebookService
 
-#flickr {u'timezone': u'{"offset":"-06:00","label":"Central Time (US & Canada)"}', u'location': u'{"_content":"Chicago, USA"}'}
-class FlickrService(object):
-  @classmethod
-  def normalize(cls, data):
-    return {
-      'timezone' : json_decode(data['timezone'])['offset']
-    }
+class FlickrService(BaseService):
+  MAPPINGS = {
+    'location' : lambda data : location.partition(',')[0],
+    'country'  : lambda data : {'USA' : 'US'}.get(location.rpartition(', ')[-1]),
+    'timezone' : lambda data : json_decode(data['timezone'])['offset']
+  }
 ServiceRegistry['flickr'] = FlickrService
 
-#github {u'location': u'Chicago', u'email': u'ninja@nin.ja'}
-class GithubService(object):
-  @classmethod
-  def normalize(cls, data):
-    return {}
+class GithubService(BaseService):
+  MAPPINGS = {
+    'location' : lambda data : data['location']
+  }
 ServiceRegistry['github'] = GithubService
 
-#linkedin {u'location': u'{"name":"Greater Chicago Area","country":{"code":"us"}}'}
-class LinkedInService(object):
-  @classmethod
-  def normalize(cls, data):
-    return {}
+class LinkedInService(BaseService):
+  MAPPINGS = {
+    'location' : lambda data : location['name'],
+    'country'  : lambda data : location['country']['code'].upper()
+  }
 ServiceRegistry['linkedin'] = LinkedInService
 
-
+def safe_expr(function, *args, **kwargs):
+  try:
+    return function(*args, **kwargs)
+  except Exception:
+    pass
