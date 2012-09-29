@@ -5,7 +5,7 @@ Hyperion is Python Flask app that uses redis as a store. It receives data from c
 
 The service is publicly available at:
 
-	http://obscure-ocean-5496.herokuapp.com/
+	http://singlytics-hyperion.herokuapp.com/
 
 ## Local Development
 
@@ -33,21 +33,21 @@ You can then access it via:
 
 To update profile:
 
-	$ curl -si -XPUT -d '{"twitter":{"id":"456"},"foursquare":{"id":789}}' -H 'Content-Type: application/json' 'http://obscure-ocean-5496.herokuapp.com/profile/abc/123/'
+	$ curl -si -XPUT -d '{"twitter":{"id":"456"},"foursquare":{"id":789}}' -H 'Content-Type: application/json' 'http://singlytics-hyperion.herokuapp.com/profile/abc/123/'
 	HTTP/1.0 200 OK
 	Content-Type: text/html; charset=utf-8
 	Content-Length: 0
 
 To update event:
 
-	$ curl -si -XPUT 'http://obscure-ocean-5496.herokuapp.com/event/abc/123/myevent/?context=foobar'
+	$ curl -si -XPUT 'http://singlytics-hyperion.herokuapp.com/event/abc/123/myevent/?context=foobar'
 	HTTP/1.0 200 OK
 	Content-Type: text/html; charset=utf-8
 	Content-Length: 0
 
 For analytics:
 
-	$ curl -si 'http://obscure-ocean-5496.herokuapp.com/analytics/abc/'
+	$ curl -si 'http://singlytics-hyperion.herokuapp.com/analytics/abc/'
 	HTTP/1.0 200 OK
 	Content-Type: application/json
 	Content-Length: 65
@@ -62,7 +62,7 @@ For analytics:
 
 For ad server:
 
-	$ curl -si 'http://obscure-ocean-5496.herokuapp.com/profile/abc/123/'
+	$ curl -si 'http://singlytics-hyperion.herokuapp.com/profile/abc/123/'
 	HTTP/1.0 200 OK
 	Content-Type: application/json
 	Content-Length: 48

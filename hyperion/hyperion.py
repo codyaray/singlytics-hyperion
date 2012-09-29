@@ -3,7 +3,7 @@
 from collections import defaultdict
 from flask import Flask, jsonify, request, Response
 from logging import getLogger
-from redis import from_url as Redis, WatchError
+from redis import from_url as Redis
 from time import time
 from uuid import uuid4
 
