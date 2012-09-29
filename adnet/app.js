@@ -24,14 +24,16 @@ app.configure('development', function(){
   app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
 
+
 app.configure('production', function(){
   app.use(express.errorHandler());
 });
 
+adsroute = require('./routes/ads.js');
 // Routes
 
-app.get('/', routes.index);
-app.get('/ads', routes.ads);
+//app.get('/', routes.index);
+app.get('/ads', adsroute.ads);
 
 
 app.listen(3000, function(){
