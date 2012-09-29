@@ -4,6 +4,7 @@ from collections import defaultdict
 from flask import Flask, jsonify, request, Response
 from logging import getLogger
 from redis import from_url as Redis
+from services import ServiceRegistry
 from time import time
 from uuid import uuid4
 
@@ -49,11 +50,13 @@ def hyperion_profile_update(application, account):
     hyperion_id = uuid4()
   db.hset('al:%s' % application, account, hyperion_id)
   db.hset('hm:%s' % hyperion_id, application, account)
+  demographics = {'timestamp' : int(time())}
   for service, meta in (request.json or {}).iteritems():
     uid = meta.get('id')
     db.hset('am:%s:%s' % (application,account), service, uid)
     db.hset('sl:%s' % service, uid, hyperion_id)
-    db.hmset('dd:%s:%s' % (application,account), {'timestamp' : int(time())})
+    demographics.update(ServiceRegistry.get(service, 'noop').normalize(meta))
+  db.hmset('dd:%s:%s' % (application,account), demographics)
   return Response(status=200)
 
 @app.route('/event/<application>/<account>/<event>/', methods=['POST', 'PUT'])
