@@ -41,7 +41,7 @@ To update profile:
 
 To update event:
 
-    $ curl -si -XPUT 'http://singlytics-hyperion.herokuapp.com/event/myapp/aprofile/myevent/?context=foobar'
+    $ curl -si -XPUT 'http://singlytics-hyperion.herokuapp.com/event/myapp/aprofile/myevent/'
     HTTP/1.0 200 OK
     Content-Type: text/html; charset=utf-8
     Content-Length: 0
@@ -78,13 +78,13 @@ For analytics:
       }, 
       "accounts": 1, 
       "events": [
-        "foobar"
+        "myevent"
       ]
     }
 
 For event analytics:
 
-    $ curl -si 'http://localhost:5000/event/ninja-mob/foobar/'
+    $ curl -si 'http://localhost:5000/event/ninja-mob/myevent/'
     HTTP/1.0 200 OK
     Content-Type: application/json
     Content-Length: 12739
