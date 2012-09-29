@@ -1,7 +1,15 @@
 # Hyperion
 Hyperion is Python Flask app that uses redis as a store. It receives data from clients then servers the data up to analytics and ad servers.
 
-## Setup
+## Public Endpoint 
+
+The service is publicly available at:
+
+	http://obscure-ocean-5496.herokuapp.com/
+
+## Local Development
+
+### Setup
 For python you just need to install flask and redis packages.
 
 Either:
@@ -11,29 +19,35 @@ or
 
 	$ pip install flask redis
 
-## Running
+### Running
 
 Then to run it:
 
 	$ python hyperion.py
 
+You can then access it via:
+
+	http://localhost:5000/
+
+## Using the service
+
 To update profile:
 
-	$ curl -si -XPUT -d '{"twitter":{"id":"456"},"foursquare":{"id":789}}' -H 'Content-Type: application/json' 'http://localhost:5000/hyperion/abc/123/'
+	$ curl -si -XPUT -d '{"twitter":{"id":"456"},"foursquare":{"id":789}}' -H 'Content-Type: application/json' 'http://obscure-ocean-5496.herokuapp.com/profile/abc/123/'
 	HTTP/1.0 200 OK
 	Content-Type: text/html; charset=utf-8
 	Content-Length: 0
 
 To update event:
 
-	$ curl -si -XPUT 'http://localhost:5000/hyperion/abc/123/myevent/?context=foobar'
+	$ curl -si -XPUT 'http://obscure-ocean-5496.herokuapp.com/event/abc/123/myevent/?context=foobar'
 	HTTP/1.0 200 OK
 	Content-Type: text/html; charset=utf-8
 	Content-Length: 0
 
 For analytics:
 
-	$ curl -si 'http://localhost:5000/hyperion/abc/'
+	$ curl -si 'http://obscure-ocean-5496.herokuapp.com/analytics/abc/'
 	HTTP/1.0 200 OK
 	Content-Type: application/json
 	Content-Length: 65
@@ -48,7 +62,7 @@ For analytics:
 
 For ad server:
 
-	$ curl -si 'http://localhost:5000/hyperion/abc/123/'
+	$ curl -si 'http://obscure-ocean-5496.herokuapp.com/profile/abc/123/'
 	HTTP/1.0 200 OK
 	Content-Type: application/json
 	Content-Length: 48

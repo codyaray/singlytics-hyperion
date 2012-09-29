@@ -21,7 +21,7 @@ REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost')
 app = Flask(__name__)
 db = Redis(REDIS_URL, db=1)
 
-@app.route('/hyperion/<application>/', methods=['GET'])
+@app.route('/analytics/<application>/', methods=['GET'])
 def hyperion_analytics(application):
   demographics = defaultdict(lambda: defaultdict(int))
   accounts = db.hkeys('al:%s' % application)
@@ -32,13 +32,16 @@ def hyperion_analytics(application):
         demographics[key][value] += 1
   return jsonify(demographics=demographics)
 
-@app.route('/hyperion/<application>/<account>/', methods=['POST', 'PUT'])
+@app.route('/profile/<application>/<account>/', methods=['POST', 'PUT'])
 def hyperion_profile_update(application, account):
   with db.pipeline() as pipe:
     while True:
       try:
         pipe.watch('al:%s' % application)
         hyperion_id = pipe.hget('al:%s' % application, account)
+        while hyperion_id is None:
+          for service in (request.json or {}).iteritems():
+            hyperion_id = pipe.hget('sl:%s' % service, uid)
         pipe.multi()
         if hyperion_id is None:
           hyperion_id = uuid4()
@@ -55,11 +58,11 @@ def hyperion_profile_update(application, account):
         pass
   return Response(status=200)
 
-@app.route('/hyperion/<application>/<account>/<event>/', methods=['POST', 'PUT'])
+@app.route('/event/<application>/<account>/<event>/', methods=['POST', 'PUT'])
 def hyperion_event(application, account, event):
   return Response(status=200)
 
-@app.route('/hyperion/<application>/<account>/', methods=['GET'])
+@app.route('/profile/<application>/<account>/', methods=['GET'])
 def hyperion_profile_retrieval(application, account):
   hyperion_id = db.hget('al:%s' % application, account)
   if hyperion_id is not None:
