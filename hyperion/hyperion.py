@@ -2,13 +2,14 @@
 
 from collections import defaultdict
 from flask import Flask, jsonify, request, Response
+from logging import getLogger
 from redis import from_url as Redis, WatchError
 from time import time
 from uuid import uuid4
 
 import os
 
-REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost')
+REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost:6379')
 
 # Legend for Redis
 # "hm:${hyperion}" => {application => account}
@@ -20,6 +21,7 @@ REDIS_URL = os.environ.get('REDISTOGO_URL', 'redis://localhost')
 
 app = Flask(__name__)
 db = Redis(REDIS_URL, db=1)
+log = getLogger(__name__)
 
 @app.route('/analytics/<application>/', methods=['GET'])
 def hyperion_analytics(application):
@@ -34,28 +36,24 @@ def hyperion_analytics(application):
 
 @app.route('/profile/<application>/<account>/', methods=['POST', 'PUT'])
 def hyperion_profile_update(application, account):
-  with db.pipeline() as pipe:
-    while True:
-      try:
-        pipe.watch('al:%s' % application)
-        hyperion_id = pipe.hget('al:%s' % application, account)
-        while hyperion_id is None:
-          for service in (request.json or {}).iteritems():
-            hyperion_id = pipe.hget('sl:%s' % service, uid)
-        pipe.multi()
-        if hyperion_id is None:
-          hyperion_id = uuid4()
-          pipe.hset('al:%s' % application, account, hyperion_id)
-        pipe.hset('hm:%s' % hyperion_id, application, account)
-        for service, meta in (request.json or {}).iteritems():
-          uid = meta.pop('id')
-          pipe.hset('am:%s:%s' % (application,account), service, uid)
-          pipe.hset('sl:%s' % service, uid, hyperion_id)
-          pipe.hmset('dd:%s:%s' % (application,account), {'timestamp' : int(time())})
-        pipe.execute()
+  hyperion_id = db.hget('al:%s' % application, account)
+  if hyperion_id is None:
+    log.debug('Starting reverse lookup for (%s,%s)', application, account)
+    for service, meta in (request.json or {}).iteritems():
+      uid = meta.get('id')
+      hyperion_id = db.hget('sl:%s' % service, uid)
+      if hyperion_id is not None:
+        log.debug('Found match of (%s,%s) to %s', service, uid, hyperion_id)
         break
-      except WatchError:
-        pass
+  if hyperion_id is None:
+    hyperion_id = uuid4()
+  db.hset('al:%s' % application, account, hyperion_id)
+  db.hset('hm:%s' % hyperion_id, application, account)
+  for service, meta in (request.json or {}).iteritems():
+    uid = meta.get('id')
+    db.hset('am:%s:%s' % (application,account), service, uid)
+    db.hset('sl:%s' % service, uid, hyperion_id)
+    db.hmset('dd:%s:%s' % (application,account), {'timestamp' : int(time())})
   return Response(status=200)
 
 @app.route('/event/<application>/<account>/<event>/', methods=['POST', 'PUT'])
@@ -78,8 +76,17 @@ def hyperion_profile_retrieval(application, account):
         result.update(demographics)
         demographics = result
     return jsonify(demographics=demographics)
-  return Response(status=400)
+  return Response(status=404)
 
 if __name__ == '__main__':
+  debug = False
+  if os.environ.get('DEBUG', 'false').lower() == 'true':
+    from logging import basicConfig, DEBUG
+    basicConfig(
+      level=DEBUG,
+      format='%(asctime)s %(levelname)-8s %(name)s (%(funcName)s:%(lineno)d) %(message)s',
+      datefmt='%Y.%m.%d-%H:%M:%S'
+    )
+    debug = True
   port = int(os.environ.get('PORT', 5000))
-  app.run(host='0.0.0.0', port=port)
+  app.run(host='0.0.0.0', port=port, debug=debug)
