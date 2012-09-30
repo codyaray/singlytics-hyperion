@@ -96,8 +96,9 @@ def hyperion_profile_update(application, account):
     demographics.update(ServiceRegistry.get(service, 'noop').normalize(meta))
     keywords.update(ServiceRegistry.get(service, 'noop').keywords(meta))
   db.hmset('dd:%s:%s' % (application,account), demographics)
-  db.delete('kw:%s:%s' % (application,account))
-  db.sadd('kw:%s:%s' % (application,account), *keywords)
+  if keywords:
+    db.delete('kw:%s:%s' % (application,account))
+    db.sadd('kw:%s:%s' % (application,account), *keywords)
   return Response(status=200)
 
 @app.route('/profile/<application>/<account>/', methods=['GET'])
