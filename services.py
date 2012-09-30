@@ -58,7 +58,7 @@ class FacebookService(BaseService):
   }
   @classmethod
   def keywords(cls, data):
-    return frozenset(ifilter(lambda w: not w in STOPWORDS, data.get('bio', '').lower().split()))
+    return frozenset(ifilter(lambda w: not w in STOPWORDS, tokenize(data.get('bio', ''))))
 ServiceRegistry['facebook'] = FacebookService
 
 class FlickrService(BaseService):

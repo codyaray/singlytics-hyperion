@@ -115,7 +115,8 @@ def hyperion_profile_retrieval(application, account):
       else:
         result.update(demographics)
         demographics = result
-    return jsonify(demographics=demographics)
+    keywords = db.smembers('kw:%s:%s' % (application,account))
+    return jsonify(demographics=demographics, keywords=list(keywords))
   return Response(status=404)
 
 if __name__ == '__main__':
