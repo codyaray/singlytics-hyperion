@@ -3,6 +3,7 @@
 from collections import defaultdict
 from flask import Flask, jsonify, request, Response
 from itertools import imap
+from json import loads as json_decode
 from logging import getLogger
 from redis import from_url as Redis
 from services import Aggregator, ServiceRegistry
@@ -83,12 +84,20 @@ def hyperion_profile_update(application, account):
   db.hset('al:%s' % application, account, hyperion_id)
   db.hset('hm:%s' % hyperion_id, application, account)
   demographics = {'timestamp' : int(time())}
+  keywords = set()
   for service, meta in (request.json or {}).iteritems():
     uid = meta.get('id')
+    meta = dict(
+      (k,json_decode(v) if isinstance(v,basestring) and (v[0] in ('\'', '"')) else v)
+      for k,v in meta.iteritems()
+    )
     db.hset('am:%s:%s' % (application,account), service, uid)
     db.hset('sl:%s' % service, uid, hyperion_id)
     demographics.update(ServiceRegistry.get(service, 'noop').normalize(meta))
+    keywords.update(ServiceRegistry.get(service, 'noop').keywords(meta))
   db.hmset('dd:%s:%s' % (application,account), demographics)
+  db.delete('kw:%s:%s' % (application,account))
+  db.sadd('kw:%s:%s' % (application,account), *keywords)
   return Response(status=200)
 
 @app.route('/profile/<application>/<account>/', methods=['GET'])
