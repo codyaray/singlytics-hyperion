@@ -13,11 +13,8 @@ class Aggregator(object):
   def rollup(cls, now, events, bucket_size=MILLISECONDS_PER_5_MINUTE):
     rollup = dict((key,len(list(values)))
       for key,values in groupby(events, key=lambda x: align(x, bucket_size)))
-    return [(x,rollup.get(x,0))
+    return [{'time' : x, 'value' : rollup.get(x,0)}
       for x in xrange(align(now - MILLISECONDS_PER_DAY, bucket_size), align(now + bucket_size, bucket_size), bucket_size)]
-  @classmethod
-  def merge(cls, events):
-    pass
 
 def align(value, bucket_size):
   return (value / bucket_size) * bucket_size
