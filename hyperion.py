@@ -88,7 +88,7 @@ def hyperion_profile_update(application, account):
   for service, meta in (request.json or {}).iteritems():
     uid = meta.get('id')
     meta = dict(
-      (k,json_decode(v) if isinstance(v,basestring) and (v[0] in ('\'', '"')) else v)
+      (k,json_decode(v) if isinstance(v,basestring) and v != '' and (v[0] in ('\'', '"')) else v)
       for k,v in meta.iteritems()
     )
     db.hset('am:%s:%s' % (application,account), service, uid)
